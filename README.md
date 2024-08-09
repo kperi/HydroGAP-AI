@@ -6,7 +6,7 @@
 For each station a  RandomForest or GradientBoosting regressor model is trained, using previous days lags.
 
 
-### Usage
+### Example forecast 
 
 
 
