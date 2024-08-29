@@ -13,7 +13,7 @@ import joblib
 NUM_TREES = 100
 DAYS_AHEAD = 14
 RANDOM_SEED = 123
-
+LAGS = [1, 2, 3]
 
 def create_features(df, lags=[1, 2, 3], dropna=True):
     """
@@ -115,7 +115,7 @@ def train_station_model(
 
     # create features per block and concatenate all blocks
     df_features = pd.concat(
-        [create_features(block, lags=[1, 2, 3]) for block in contiguous_bocks]
+        [create_features(block, lags=LAGS) for block in contiguous_bocks]
     )
     x_train, y_train, x_test, y_test = create_train_test_splits(
         df_features, split_ratio=split_ratio
