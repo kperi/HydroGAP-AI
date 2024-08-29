@@ -1,15 +1,13 @@
 # HydroGAPML
 
 
-## 1-day ahead forecast
+## 1-day gap prediction
 
 For each station a  RandomForest or GradientBoosting regressor model is trained, using previous days lags.
 
 
-### Example forecast 
-
-
-
+### Example prediction 
+ 
 
 ```python
 import joblib
@@ -32,13 +30,12 @@ model.predict(test_df) # array([72.47600025])
 
 
 
-## 2-weeks ahead forecast
+## 2-weeks gap prediction
 
 For each station a  RandomForest or GradientBoosting regressor model is trained, using previous days lags.
 Here, the model is trained to predict the next 14 days
 
-### Example forecst
-
+### Example prediction
 
 
 ```python
