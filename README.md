@@ -36,11 +36,15 @@ FLAGS
 
 Train models for all stations: 
 
-```bash python single_station_model.py --all-stations``` 
+```bash 
+python single_station_model.py --all-stations
+``` 
 
 Train a model for a single station: 
 
-```python single_station_model.py  --station_name=data/parquet.raw/station_518 --persist_model ``` 
+```bash 
+python single_station_model.py  --station_name=data/parquet.raw/station_518 --persist_model
+``` 
 
 
 
