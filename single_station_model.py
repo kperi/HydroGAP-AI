@@ -1,11 +1,12 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 import tqdm
 import glob
 import os
 import fire
+import joblib
 from tabulate import tabulate
-
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from feature_utils import split_contiguous_blocks
 
 
 def create_features(df, lags=[1, 2, 3], dropna=True):
@@ -57,7 +58,7 @@ def create_train_test_splits(df_features, split_ratio=0.8):
     """
 
     df_features = create_features(df_features, lags=[1, 2, 3], dropna=True)
-  
+
     # we keep the fist 80% for training and the last 20% for testing
     # we may want to use a random train/test split
     split_index = int(split_ratio * df_features.shape[0])
@@ -76,7 +77,7 @@ def create_train_test_splits(df_features, split_ratio=0.8):
 
 def create_model(model_type, **argv):
     """
-    keep it simple for now: check model name and create corresponding object 
+    keep it simple for now: check model name and create corresponding object
     """
     if model_type == "RandomForestRegressor":
         return RandomForestRegressor(**argv)
@@ -86,40 +87,70 @@ def create_model(model_type, **argv):
         raise ValueError("Model not implemented")
 
 
-def main(data_path: str = "data/parquet.raw", model_type="RandomForestRegressor"):
+def train_station_model(
+    station_file, model_type="RandomForestRegressor", split_ratio=0.8
+):
+
+    df = pd.read_parquet(station_file)
+
+    # split the data frame in blocks of time-contiguous obsdis values
+    contiguous_bocks = split_contiguous_blocks(df)
+
+    # create features per block and concatenate all blocks
+    df_features = pd.concat(
+        [create_features(block, lags=[1, 2, 3]) for block in contiguous_bocks]
+    )
+
+    x_train, y_train, x_test, y_test = create_train_test_splits(
+        df_features, split_ratio=split_ratio
+    )
+
+    model = create_model(model_type=model_type, n_estimators=100, random_state=42)
+
+    station = os.path.basename(station_file).split("_cleaned")[0].strip(".0")
+    if x_train.shape[0] == 0:
+        print(f"File for station {station} has no data")
+        raise ValueError("No data for station {station}")
+
+    model.fit(x_train, y_train)
+    score = model.score(x_test, y_test)
+    return model, score, station
+
+
+def main(
+    data_path: str = "data/parquet.raw",
+    model_type="RandomForestRegressor",
+    station_name: str = None,
+    all_stations: bool = False,
+    persist_model: bool = False,
+):
 
     files = glob.glob(data_path + "/*.parquet")
+   
+    if all_stations:
+        scores = []
+        for file in tqdm.tqdm(files):
+            _, score, station = train_station_model(file, model_type)
+            scores.append((station, score))
 
-    scores = []
-    for file in tqdm.tqdm(files):
-        df = pd.read_parquet(file)
-        # df = df.ffill(). this won't work in cases where most recent values are missing.
-        df = df.dropna()
+        scores = pd.DataFrame(scores, columns=["station", "score"])
+        scores = scores.sort_values(by="score", ascending=True)
+        print(tabulate(scores.head(), headers="keys", tablefmt="fancy_outline"))
+        print(tabulate(scores.tail(), headers="keys", tablefmt="fancy_outline"))
 
-        df_features = create_features(df, lags=[1, 2, 3], dropna=True)
-        x_train, y_train, x_test, y_test = create_train_test_splits(
-            df_features, split_ratio=0.8
-        )
+        scores.to_csv(f"scores_{model_type}.csv", index=False)
 
-        model = create_model(model_type=model_type, n_estimators=100, random_state=42)
+    elif station_name is not None:
+        # train model for a single station
+        file = f"{station_name}.0.parquet"
+        model, score, station = train_station_model(file, model_type)
 
-        station = os.path.basename(file).split("_cleaned")[0].strip(".0")
-        if x_train.shape[0] == 0:
-            print(f"File for station {station} has no data")
-            continue
-
-        model.fit(x_train, y_train)
-
-        score = model.score(x_test, y_test)
-        scores.append((station, score))
-
-    scores = pd.DataFrame(scores, columns=["station", "score"])
-    scores = scores.sort_values(by="score", ascending=True)
-
-    print(tabulate(scores.head(), headers='keys', tablefmt='fancy_outline'))
-    print(tabulate(scores.tail(), headers='keys', tablefmt='fancy_outline'))
-
-    scores.to_csv(f"scores_{model_type}.csv", index=False)
+        print( f"Score for station {station_name} : {score:0.4}")
+        if persist_model:
+            model_name = f"{station_name}_{model_type}.joblib"
+            joblib.dump(model, model_name)
+    else:
+        print("Please provide a station id")
 
 
 if __name__ == "__main__":
