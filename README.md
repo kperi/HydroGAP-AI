@@ -1,10 +1,13 @@
 # HydroGAPML
 
+TODO: Write a high level overview of the library
+
+ 
+## Feature engineering
+
+Given a station file with values sorted by time, the file is split in contiguous blocks (pandas dataframes) of observed discharge (`obsdis`) values. For each one of the resulting blocks the corresponding features are generated using previous day lag values. All features are merged into a singe dataframe which is then used to train the correspoding station model. 
 
 ## 1-day gap prediction
-
-For each station a  RandomForest or GradientBoosting regressor model is trained, using previous days lags.
-
 
 ### Example prediction 
  
