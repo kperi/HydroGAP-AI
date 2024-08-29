@@ -8,6 +8,7 @@ from tabulate import tabulate
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from feature_utils import split_contiguous_blocks
 
+LAGS = [1, 2, 3]
 
 def create_features(df, lags=[1, 2, 3], dropna=True):
     """
@@ -57,7 +58,7 @@ def create_train_test_splits(df_features, split_ratio=0.8):
     - y_test (pandas.Series): The testing target variable series.
     """
 
-    df_features = create_features(df_features, lags=[1, 2, 3], dropna=True)
+    df_features = create_features(df_features, lags=LAGS, dropna=True)
 
     # we keep the fist 80% for training and the last 20% for testing
     # we may want to use a random train/test split
@@ -96,9 +97,10 @@ def train_station_model(
     # split the data frame in blocks of time-contiguous obsdis values
     contiguous_bocks = split_contiguous_blocks(df)
 
+
     # create features per block and concatenate all blocks
     df_features = pd.concat(
-        [create_features(block, lags=[1, 2, 3]) for block in contiguous_bocks]
+        [create_features(block, lags=LAGS) for block in contiguous_bocks]
     )
 
     x_train, y_train, x_test, y_test = create_train_test_splits(
@@ -126,7 +128,7 @@ def main(
 ):
 
     files = glob.glob(data_path + "/*.parquet")
-   
+
     if all_stations:
         scores = []
         for file in tqdm.tqdm(files):
@@ -145,7 +147,7 @@ def main(
         file = f"{station_name}.0.parquet"
         model, score, station = train_station_model(file, model_type)
 
-        print( f"Score for station {station_name} : {score:0.4}")
+        print(f"Score for station {station_name} : {score:0.4}")
         if persist_model:
             model_name = f"{station_name}_{model_type}.joblib"
             joblib.dump(model, model_name)
