@@ -1,4 +1,4 @@
-# HydroGAPML
+# HydroGAP-AI
 
 TODO: Write a high level overview of the library
 
