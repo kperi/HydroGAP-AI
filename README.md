@@ -7,6 +7,43 @@ TODO: Write a high level overview of the library
 
 Given a station file with values sorted by time, the file is split in contiguous blocks (pandas dataframes) of observed discharge (`obsdis`) values. For each one of the resulting blocks the corresponding features are generated using previous day lag values. All features are merged into a singe dataframe which is then used to train the correspoding station model. 
 
+
+## Usage 
+
+
+```bash      
+SYNOPSIS
+    single_station_model.py <flags>
+
+FLAGS
+    -d, --data_path=DATA_PATH
+        Type: str
+        Default: 'data/parquet.raw'
+    -m, --model_type=MODEL_TYPE
+        Default: 'RandomForestRegressor'
+    -s, --station_name=STATION_NAME
+        Type: Optional[str]
+        Default: None
+    -a, --all_stations=ALL_STATIONS
+        Type: bool
+        Default: False
+    -p, --persist_model=PERSIST_MODEL
+        Type: bool
+        Default: False
+```
+
+### Example
+
+Train models for all stations: 
+
+```bash python single_station_model.py --all-stations``` 
+
+Train a model for a single station: 
+
+```python single_station_model.py  --station_name=data/parquet.raw/station_518 --persist_model ``` 
+
+
+
 ## 1-day gap prediction
 
 ### Example prediction 
