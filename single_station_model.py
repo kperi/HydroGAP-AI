@@ -7,8 +7,11 @@ import joblib
 from tabulate import tabulate
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from feature_utils import split_contiguous_blocks
+from sklearn.model_selection import train_test_split
 
+SEED = 42
 LAGS = [1, 2, 3]
+
 
 def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     """
@@ -37,11 +40,9 @@ def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     all_cols = ["tp", "obsdis"] + P_cols + Q_cols
     df_features = df_features[all_cols]
 
-
-
     if use_dummies:
-        df_features['month'] = df_features.index.month
-        df_features['quarter'] = df_features.index.quarter
+        df_features["month"] = df_features.index.month
+        df_features["quarter"] = df_features.index.quarter
         df_features = pd.get_dummies(df_features, columns=["month", "quarter"])
 
     if dropna:
@@ -50,7 +51,7 @@ def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     return df_features
 
 
-def create_train_test_splits(df_features, split_ratio=0.8):
+def create_train_test_splits(df_features, split_ratio=0.8, randomized_split=True):
     """
     Split the input dataframe into training and testing sets for machine learning modeling.
 
@@ -69,8 +70,13 @@ def create_train_test_splits(df_features, split_ratio=0.8):
     # we may want to use a random train/test split
     split_index = int(split_ratio * df_features.shape[0])
 
-    trainset = df_features[:split_index]
-    testset = df_features[split_index:]
+    if randomized_split:
+        trainset, testset = train_test_split(
+            df_features, test_size=0.2, random_state=SEED
+        )
+    else:
+        trainset = df_features[:split_index]
+        testset = df_features[split_index:]
 
     x_train = trainset.drop(columns=["obsdis", "tp"])
     y_train = trainset["obsdis"]
@@ -94,7 +100,10 @@ def create_model(model_type, **argv):
 
 
 def train_station_model(
-    station_file, model_type="RandomForestRegressor", split_ratio=0.8
+    station_file,
+    model_type="RandomForestRegressor",
+    split_ratio=0.8,
+    randomized_split=True,
 ):
 
     df = pd.read_parquet(station_file)
@@ -102,14 +111,13 @@ def train_station_model(
     # split the data frame in blocks of time-contiguous obsdis values
     contiguous_bocks = split_contiguous_blocks(df)
 
-
     # create features per block and concatenate all blocks
     df_features = pd.concat(
         [create_features(block, lags=LAGS) for block in contiguous_bocks]
     )
 
     x_train, y_train, x_test, y_test = create_train_test_splits(
-        df_features, split_ratio=split_ratio
+        df_features, split_ratio=split_ratio, randomized_split=randomized_split
     )
 
     model = create_model(model_type=model_type, n_estimators=100, random_state=42)
@@ -129,15 +137,21 @@ def main(
     model_type="RandomForestRegressor",
     station_name: str = None,
     all_stations: bool = False,
+    train_top_k=None,
     persist_model: bool = False,
+    randomized_split: bool = True,
 ):
 
     files = glob.glob(data_path + "/*.parquet")
+    if train_top_k is not None:
+        files = files[:train_top_k]
 
     if all_stations:
         scores = []
         for file in tqdm.tqdm(files):
-            _, score, station = train_station_model(file, model_type)
+            _, score, station = train_station_model(
+                file, model_type, randomized_split=randomized_split
+            )
             scores.append((station, score))
 
         scores = pd.DataFrame(scores, columns=["station", "score"])
