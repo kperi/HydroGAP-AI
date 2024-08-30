@@ -48,6 +48,8 @@ python single_station_model.py  --station_name=data/parquet.raw/station_518 --pe
 
 
 
+
+
 ## 1-day gap prediction
 
 ### Example prediction 
@@ -73,6 +75,25 @@ model.predict(test_df) # array([72.47600025])
 ``` 
 
 
+
+## Recursive gap prediction
+
+Given a station file with discharge gaps in the last two rows, we can use a iterative prediction strategy as follows:
+
+
+```python 
+# predict first
+def recursive_prediction( regressor, df, num_steps):
+    
+    for step in range(num_steps):
+        df_features = create_features(df)
+        predicted_dis = regressor.predict(df_features.drop(['tp', 'obsdis'], axis=1)) 
+        df.loc[df.index[step-num_steps], 'obsdis'] = predicted_dis[step]
+ 
+recursive_prediction(regressor, df_test, 2)
+
+``` 
+See [this](notebooks/recursive_example.ipynb) notebook for a more detailed example
 
 ## 2-weeks gap prediction
 
