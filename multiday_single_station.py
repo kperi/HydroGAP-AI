@@ -15,7 +15,7 @@ DAYS_AHEAD = 14
 RANDOM_SEED = 123
 LAGS = [1, 2, 3]
 
-def create_features(df, lags=[1, 2, 3], dropna=True):
+def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     """
     Create lagged features for time series data.
 
@@ -45,8 +45,17 @@ def create_features(df, lags=[1, 2, 3], dropna=True):
     for i in range(DAYS_AHEAD - 1):  # 5+1 days forecast
         df_features[f"obsdis_{i+1}"] = df_features.obsdis.shift(-1 * (i + 1))
 
+
+    if use_dummies:
+        df_features['month'] = df_features.index.month
+        df_features['quarter'] = df_features.index.quarter
+        df_features = pd.get_dummies(df_features, columns=["month", "quarter"])
+
+
     if dropna:
         df_features.dropna(inplace=True)
+
+
 
     return df_features
 
