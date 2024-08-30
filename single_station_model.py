@@ -6,11 +6,35 @@ import fire
 import joblib
 from tabulate import tabulate
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
 from feature_utils import split_contiguous_blocks
 from sklearn.model_selection import train_test_split
 
 SEED = 42
 LAGS = [1, 2, 3]
+
+
+def standardize_features(df):
+    """
+    Standardize the values of the real number columns in the input DataFrame.
+
+    Parameters:
+    - df (DataFrame): The input DataFrame containing the features.
+
+    Returns:
+    - df_std (DataFrame): The DataFrame with standardized features.
+    """
+
+    df_std = df.copy()
+    real_cols = df_std.select_dtypes(include=["float64", "float32"]).columns
+    # print( f"Real cols = {real_cols}")
+
+    for col in real_cols:
+        mean = df_std[col].mean()
+        std = df_std[col].std()
+        df_std[col] = (df_std[col] - mean) / std
+
+    return df_std
 
 
 def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
@@ -95,6 +119,8 @@ def create_model(model_type, **argv):
         return RandomForestRegressor(**argv)
     elif model_type == "GradientBoostingRegressor":
         return GradientBoostingRegressor(**argv)
+    elif model_type == "SVR":
+        return SVR(**argv)
     else:
         raise ValueError("Model not implemented")
 
@@ -104,6 +130,7 @@ def train_station_model(
     model_type="RandomForestRegressor",
     split_ratio=0.8,
     randomized_split=True,
+    n_estimators=100,
 ):
 
     df = pd.read_parquet(station_file)
@@ -115,12 +142,17 @@ def train_station_model(
     df_features = pd.concat(
         [create_features(block, lags=LAGS) for block in contiguous_bocks]
     )
+    df_features.dropna(inplace=True)
 
     x_train, y_train, x_test, y_test = create_train_test_splits(
         df_features, split_ratio=split_ratio, randomized_split=randomized_split
     )
 
-    model = create_model(model_type=model_type, n_estimators=100, random_state=42)
+    if model_type in ("RandomForestRegressor", "GradientBoostingRegressor"):
+        model = create_model(model_type=model_type, n_estimators=n_estimators, random_state=SEED)
+    elif model_type == "SVR":
+        df_features = standardize_features(df_features)
+        model = create_model(model_type=model_type, kernel="rbf", C=1.0, gamma="scale")
 
     station = os.path.basename(station_file).split("_cleaned")[0].strip(".0")
     if x_train.shape[0] == 0:
@@ -140,6 +172,7 @@ def main(
     train_top_k=None,
     persist_model: bool = False,
     randomized_split: bool = True,
+    n_estimators: int = 100,
 ):
 
     files = glob.glob(data_path + "/*.parquet")
@@ -150,7 +183,7 @@ def main(
         scores = []
         for file in tqdm.tqdm(files):
             _, score, station = train_station_model(
-                file, model_type, randomized_split=randomized_split
+                file, model_type, randomized_split=randomized_split, n_estimators=n_estimators
             )
             scores.append((station, score))
 
@@ -164,7 +197,9 @@ def main(
     elif station_name is not None:
         # train model for a single station
         file = f"{station_name}.0.parquet"
-        model, score, station = train_station_model(file, model_type)
+        model, score, station = train_station_model(
+            file, model_type, randomized_split=randomized_split, n_estimators=n_estimators
+        )
 
         print(f"Score for station {station_name} : {score:0.4}")
         if persist_model:
