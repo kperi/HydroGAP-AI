@@ -10,7 +10,7 @@ from feature_utils import split_contiguous_blocks
 
 LAGS = [1, 2, 3]
 
-def create_features(df, lags=[1, 2, 3], dropna=True):
+def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     """
     Create lagged features for time series data.
 
@@ -37,6 +37,13 @@ def create_features(df, lags=[1, 2, 3], dropna=True):
     all_cols = ["tp", "obsdis"] + P_cols + Q_cols
     df_features = df_features[all_cols]
 
+
+
+    if use_dummies:
+        df_features['month'] = df_features.index.month
+        df_features['quarter'] = df_features.index.quarter
+        df_features = pd.get_dummies(df_features, columns=["month", "quarter"])
+
     if dropna:
         df_features.dropna(inplace=True)
 
@@ -58,7 +65,7 @@ def create_train_test_splits(df_features, split_ratio=0.8):
     - y_test (pandas.Series): The testing target variable series.
     """
 
-    df_features = create_features(df_features, lags=LAGS, dropna=True)
+    #df_features = create_features(df_features, lags=LAGS, dropna=True)
 
     # we keep the fist 80% for training and the last 20% for testing
     # we may want to use a random train/test split
