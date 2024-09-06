@@ -40,9 +40,6 @@ reall_combined_dfs, val_full, metrics_gaps, real_predictionst = predict_station_
  'kurtosis_value': 1.3201251228376147,
  'Q_lags': [1, 2, 3],
  'Q_lags_Coefficients': [0.996, -0.642, -0.169],
- 'P_lags': [1,
-  2,
-  3,
-  ....
+ 'P_lags': [1,2,3],
 }
 ```
