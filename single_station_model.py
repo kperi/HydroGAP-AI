@@ -11,7 +11,7 @@ from feature_utils import split_contiguous_blocks
 from sklearn.model_selection import train_test_split
 
 SEED = 42
-LAGS = [1, 2, 3]
+LAGS = [1, 2, 3, 4]
 
 
 def standardize_features(df):
@@ -67,6 +67,7 @@ def create_features(df, lags=[1, 2, 3], dropna=True, use_dummies=True):
     if use_dummies:
         df_features["month"] = df_features.index.month
         df_features["quarter"] = df_features.index.quarter
+        
         df_features = pd.get_dummies(df_features, columns=["month", "quarter"])
 
     if dropna:
@@ -133,12 +134,16 @@ def train_station_model(
     n_estimators=100,
 ):
 
+    station = os.path.basename(station_file).split("_cleaned")[0].strip(".0")
     df = pd.read_parquet(station_file)
 
     # split the data frame in blocks of time-contiguous obsdis values
     contiguous_bocks = split_contiguous_blocks(df)
 
+    if len(contiguous_bocks) == 0:
+        return None, 0, 0, 0, station
     # create features per block and concatenate all blocks
+
     df_features = pd.concat(
         [create_features(block, lags=LAGS) for block in contiguous_bocks]
     )
@@ -149,19 +154,23 @@ def train_station_model(
     )
 
     if model_type in ("RandomForestRegressor", "GradientBoostingRegressor"):
-        model = create_model(model_type=model_type, n_estimators=n_estimators, random_state=SEED)
+        model = create_model(
+            model_type=model_type, n_estimators=n_estimators, random_state=SEED
+        )
     elif model_type == "SVR":
         df_features = standardize_features(df_features)
         model = create_model(model_type=model_type, kernel="rbf", C=1.0, gamma="scale")
 
-    station = os.path.basename(station_file).split("_cleaned")[0].strip(".0")
     if x_train.shape[0] == 0:
         print(f"File for station {station} has no data")
         raise ValueError("No data for station {station}")
 
     model.fit(x_train, y_train)
     score = model.score(x_test, y_test)
-    return model, score, station
+    mae = (model.predict(x_test) - y_test).abs().mean()
+    mape = (model.predict(x_test) - y_test).abs().mean() / y_test.mean()
+
+    return model, score, mae, mape,  station
 
 
 def main(
@@ -182,13 +191,16 @@ def main(
     if all_stations:
         scores = []
         for file in tqdm.tqdm(files):
-            _, score, station = train_station_model(
-                file, model_type, randomized_split=randomized_split, n_estimators=n_estimators
+            _, score, mae, mape, station = train_station_model(
+                file,
+                model_type,
+                randomized_split=randomized_split,
+                n_estimators=n_estimators,
             )
-            scores.append((station, score))
+            scores.append((station, score, mae, mape))
 
-        scores = pd.DataFrame(scores, columns=["station", "score"])
-        scores = scores.sort_values(by="score", ascending=True)
+        scores = pd.DataFrame(scores, columns=["station", "score", "mae", "mape"])
+        scores = scores.sort_values(by="mape", ascending=True)
         print(tabulate(scores.head(), headers="keys", tablefmt="fancy_outline"))
         print(tabulate(scores.tail(), headers="keys", tablefmt="fancy_outline"))
 
@@ -197,8 +209,11 @@ def main(
     elif station_name is not None:
         # train model for a single station
         file = f"{station_name}.0.parquet"
-        model, score, station = train_station_model(
-            file, model_type, randomized_split=randomized_split, n_estimators=n_estimators
+        model, score, mae, mape, station = train_station_model(
+            file,
+            model_type,
+            randomized_split=randomized_split,
+            n_estimators=n_estimators,
         )
 
         print(f"Score for station {station_name} : {score:0.4}")
