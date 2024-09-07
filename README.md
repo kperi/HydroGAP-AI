@@ -2,6 +2,15 @@
 
 TODO: Write a high level overview of the library
 
+
+## Installation
+
+You can install the library using the following command: 
+
+```bash
+pip install git+https://github.com/kperi/HydroGAP-AI.git
+```
+
 ## Predict gaps in stations 
 
 ### Usage
