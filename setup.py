@@ -39,7 +39,6 @@ setup(
         "hydroeval",
         "statsmodels",
         "scipy",
-        "tqdm",
-        "glob"
+        "tqdm", 
     ],
 )
