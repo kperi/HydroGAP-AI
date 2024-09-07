@@ -11,10 +11,8 @@ pd.set_option("display.width", None)
 pd.set_option("display.max_colwidth", None)
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import random
-from tqdm import tqdm  # Import tqdm for the progress bar
-from datetime import datetime, timedelta
+from datetime import  timedelta
 
 # Import algorithms
 from sklearn.ensemble import RandomForestRegressor
