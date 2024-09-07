@@ -41,7 +41,7 @@ from statsmodels.tsa.stattools import pacf, ccf
 
 import scipy.stats
 from datetime import datetime
-
+RANDOM_STATE = 0
 
 num_pacf_lags = 3  # Number of PACF lags to use
 plag_start = 1  # how many days before should the lag period start from
@@ -162,7 +162,7 @@ def calculate_initial_metrics(data_real, input_file_path:str, results_folder:str
         .cumsum()
     )
     nan_regions = data_real[nan_groups > 0].groupby((nan_groups == 0).cumsum())
-    for name, group in nan_regions:
+    for _, group in nan_regions:
         ax7.axvspan(
             group.index[0], group.index[-1], color="red", alpha=0.3
         )  # Shade the NaN regions with a red color
@@ -273,10 +273,10 @@ def introduce_synthetic_gaps(
 ):
     try:
         # Use a different random seed just for the gap introduction process
-        if use_random_gaps:
-            random_state = np.random.RandomState(None)  # Truly random seed
-        else:
-            random_state = np.random.RandomState(42)  # Fixed seed for reproducibility
+        #if use_random_gaps:
+        #    random_state = np.random.RandomState(None)  # Truly random seed
+        #else:
+        #    random_state = np.random.RandomState(RANDOM_STATE)  # Fixed seed for reproducibility
 
         # Ensure the 'time' index is in datetime format
         df.index = pd.to_datetime(df.index)
@@ -476,14 +476,14 @@ def preprocess_data(df, start_year, end_year, Q_lags=[], P_lags=[]):
 def train_model(x_train, y_train, model_type):
     # Train a model based on the specified type.
     if model_type == "rf":
-        model = RandomForestRegressor(random_state=42)
+        model = RandomForestRegressor(random_state=RANDOM_STATE)
     elif model_type == "xgb":
         model = xgb.XGBRegressor(
-            objective="reg:squarederror", eval_metric="rmse", random_state=42
+            objective="reg:squarederror", eval_metric="rmse", random_state=RANDOM_STATE
         )
     elif model_type == "lgb":
         model = lgb.LGBMRegressor(
-            objective="regression", metric="rmse", random_state=42
+            objective="regression", metric="rmse", random_state=RANDOM_STATE
         )
     elif model_type == "lr":
         model = SGDRegressor()
@@ -503,7 +503,7 @@ def train_model(x_train, y_train, model_type):
 def train_model_hyper_opt(x_train, y_train, model_type):
     # Train a model based on the specified type.
     if model_type == "rf":
-        model = RandomForestRegressor(random_state=42)
+        model = RandomForestRegressor(random_state=RANDOM_STATE)
         param_grid = {
             "n_estimators": [50, 100, 200, 300, 400, 500],
             "max_depth": [2, 4, 8, 10, 15],
@@ -512,7 +512,7 @@ def train_model_hyper_opt(x_train, y_train, model_type):
         }
     elif model_type == "xgb":
         model = xgb.XGBRegressor(
-            objective="reg:squarederror", eval_metric="rmse", random_state=42
+            objective="reg:squarederror", eval_metric="rmse", random_state=RANDOM_STATE
         )
         param_grid = {
             "n_estimators": [50, 100, 200, 300, 400, 500],
@@ -522,7 +522,7 @@ def train_model_hyper_opt(x_train, y_train, model_type):
         }
     elif model_type == "lgb":
         model = lgb.LGBMRegressor(
-            objective="regression", metric="rmse", random_state=42
+            objective="regression", metric="rmse", random_state=RANDOM_STATE
         )
         param_grid = {
             "n_estimators": [50, 100, 200, 300, 400, 500],
@@ -531,21 +531,21 @@ def train_model_hyper_opt(x_train, y_train, model_type):
             "num_leaves": [5, 10, 20, 40, 80, 160],
         }
     elif model_type == "lr":
-        model = SGDRegressor(random_state=42, shuffle=False)
+        model = SGDRegressor(random_state=RANDOM_STATE, shuffle=False)
         param_grid = {
             "alpha": [0.0001, 0.001, 0.01, 0.1],
             "penalty": ["l2", "l1", "elasticnet"],
             "max_iter": [100, 500, 1000, 2000],
         }
     elif model_type == "knn":
-        model = KNeighborsRegressor(random_state=42)
+        model = KNeighborsRegressor(random_state=RANDOM_STATE)
         param_grid = {
             "n_neighbors": [3, 5, 10, 20],
             "weights": ["uniform", "distance"],
             "metric": ["euclidean", "manhattan"],
         }
     elif model_type == "svr":
-        model = SVR(random_state=42)
+        model = SVR(random_state=RANDOM_STATE)
         param_grid = {
             "C": [0.01, 0.1, 0.2, 0.4, 0.8, 1],
             "kernel": ["linear", "poly", "rbf", "sigmoid"],
@@ -689,6 +689,8 @@ def process_file(
     )
     training = training.dropna()
 
+
+    ## TODO: use scaler_tp when using SVC-like models
     data_with_gaps, scaler_tp, scaler_obsdis = preprocess_data(
         data, start_year, end_year, Q_lags=Q_lags, P_lags=P_lags
     )
@@ -696,7 +698,9 @@ def process_file(
     # Training
     steps = 1
     data_train = training[:-steps]
-    data_test = training[-steps:]
+    
+    # TODO: re-evaluate testing?
+    #data_test = training[-steps:]
 
     x_train = data_train.drop(columns=["obsdis", "tp"])
     y_train = data_train["obsdis"]
@@ -709,7 +713,7 @@ def process_file(
     combined_dfs = pd.DataFrame()
     for _, gap in gap_info_df.iterrows():
         gap_start = gap["start_date"]
-        gap_duration = gap["duration_days"]
+        
         gap_end = gap["end_date"]
 
         # Extract the features for the current gap
@@ -770,7 +774,7 @@ def process_file(
         )  # col1=real values+gaps for indexes of all gaps; col2=all preds
 
     all_combined_dfs = combined_dfs.drop(index=data_real_gap_indices)
-    val2 = data_real["obsdis"]
+    
     val_full = data_real[["obsdis"]].copy()  # Create a copy of the 'obsdis' column
     val_full["predicted"] = val_full[
         "obsdis"
@@ -863,3 +867,6 @@ def process_file(
     # Add gap metrics to your final metrics or export them as CSVs
     metrics_gaps.update(ml_metrics_gaps)
     return all_combined_dfs, val_full, metrics_gaps, real_predictions
+
+
+
