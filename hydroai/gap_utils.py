@@ -12,7 +12,7 @@ pd.set_option("display.max_colwidth", None)
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from datetime import  timedelta
+from datetime import timedelta
 
 # Import algorithms
 from sklearn.ensemble import RandomForestRegressor
@@ -39,6 +39,7 @@ from statsmodels.tsa.stattools import pacf, ccf
 
 import scipy.stats
 from datetime import datetime
+
 RANDOM_STATE = 0
 
 num_pacf_lags = 3  # Number of PACF lags to use
@@ -48,7 +49,7 @@ num_ccf_lags = 30  # Number of CCF lags to use
 
 # Calculate initial gap and streamflow metrics on the real dataset
 # Extract the base file name without extension for naming outputs
-def calculate_initial_metrics(data_real, input_file_path:str, results_folder:str):
+def calculate_initial_metrics(data_real, input_file_path: str, results_folder: str):
     base_file_name = os.path.splitext(os.path.basename(input_file_path))[0]
 
     # Detect NaN values in the real data (initial dataset)
@@ -271,9 +272,9 @@ def introduce_synthetic_gaps(
 ):
     try:
         # Use a different random seed just for the gap introduction process
-        #if use_random_gaps:
+        # if use_random_gaps:
         #    random_state = np.random.RandomState(None)  # Truly random seed
-        #else:
+        # else:
         #    random_state = np.random.RandomState(RANDOM_STATE)  # Fixed seed for reproducibility
 
         # Ensure the 'time' index is in datetime format
@@ -484,11 +485,11 @@ def train_model(x_train, y_train, model_type):
             objective="regression", metric="rmse", random_state=RANDOM_STATE
         )
     elif model_type == "lr":
-        model = SGDRegressor()
+        model = SGDRegressor(random_state=RANDOM_STATE)
     elif model_type == "knn":
-        model = KNeighborsRegressor()
+        model = KNeighborsRegressor(random_state=RANDOM_STATE)
     elif model_type == "svr":
-        model = SVR()
+        model = SVR(random_state=RANDOM_STATE)
     else:
         raise ValueError(
             "Unsupported model type. Choose from 'rf', 'xgb', 'lgb', 'lr', 'knn', 'svr'."
@@ -576,11 +577,15 @@ def update_features(previous_input, new_prediction, num_lags):
     updated_input[0] = new_prediction  # Set the new prediction as the first lag
     return updated_input
 
-#METRICS
+
+# METRICS
 def index_of_agreement(obs, cal):
     mean_obs = np.mean(obs)
-    ioa = 1 - (np.sum((obs - cal) ** 2)) / (np.sum((np.abs(cal - mean_obs) + np.abs(obs - mean_obs)) ** 2))
+    ioa = 1 - (np.sum((obs - cal) ** 2)) / (
+        np.sum((np.abs(cal - mean_obs) + np.abs(obs - mean_obs)) ** 2)
+    )
     return ioa
+
 
 def recursive_forecasting(initial_input, model, n_steps, gaps_df):
     predictions = []
@@ -662,10 +667,12 @@ def process_file(
         )
         # Backfill remaining NaNs if interpolation does not cover all gap
         data["obsdis"].iloc[:interpolation_range].fillna(method="bfill", inplace=True)
+
         data_real_gap_indices = data_real_gap_indices.drop(
             data_real_gap_indices[: interpolation_range - days_to_gaps[0] + 1]
-        )  # 999
+        )
 
+ 
     gap_info, days_to_gaps = detect_gaps(data)
 
     # Convert gap_info to DataFrame for easy manipulation
@@ -687,7 +694,6 @@ def process_file(
     )
     training = training.dropna()
 
-
     ## TODO: use scaler_tp when using SVC-like models
     data_with_gaps, scaler_tp, scaler_obsdis = preprocess_data(
         data, start_year, end_year, Q_lags=Q_lags, P_lags=P_lags
@@ -696,9 +702,9 @@ def process_file(
     # Training
     steps = 1
     data_train = training[:-steps]
-    
+
     # TODO: re-evaluate testing?
-    #data_test = training[-steps:]
+    # data_test = training[-steps:]
 
     x_train = data_train.drop(columns=["obsdis", "tp"])
     y_train = data_train["obsdis"]
@@ -711,7 +717,7 @@ def process_file(
     combined_dfs = pd.DataFrame()
     for _, gap in gap_info_df.iterrows():
         gap_start = gap["start_date"]
-        
+
         gap_end = gap["end_date"]
 
         # Extract the features for the current gap
@@ -772,7 +778,7 @@ def process_file(
         )  # col1=real values+gaps for indexes of all gaps; col2=all preds
 
     all_combined_dfs = combined_dfs.drop(index=data_real_gap_indices)
-    
+
     val_full = data_real[["obsdis"]].copy()  # Create a copy of the 'obsdis' column
     val_full["predicted"] = val_full[
         "obsdis"
@@ -865,6 +871,3 @@ def process_file(
     # Add gap metrics to your final metrics or export them as CSVs
     metrics_gaps.update(ml_metrics_gaps)
     return all_combined_dfs, val_full, metrics_gaps, real_predictions
-
-
-
