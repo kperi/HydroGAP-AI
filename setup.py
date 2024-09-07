@@ -38,6 +38,7 @@ setup(
         "lightgbm",
         "hydroeval",
         "statsmodels",
-        "scipy"
+        "scipy",
+        "tqdm"
     ],
 )
