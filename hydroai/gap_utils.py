@@ -39,12 +39,27 @@ from statsmodels.tsa.stattools import pacf, ccf
 
 import scipy.stats
 from datetime import datetime
+import os
+import pandas as pd
+import numpy as np
+from datetime import timedelta
+from sklearn.metrics import mean_absolute_error, r2_score
+import hydroeval as he
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import SGDRegressor
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
+from sklearn.model_selection import GridSearchCV
+import xgboost as xgb
+import lightgbm as lgb
+import copy
 
 RANDOM_STATE = 0
 
 num_pacf_lags = 3  # Number of PACF lags to use
 plag_start = 1  # how many days before should the lag period start from
 num_ccf_lags = 30  # Number of CCF lags to use
+
 
 
 # Calculate initial gap and streamflow metrics on the real dataset
@@ -487,9 +502,9 @@ def train_model(x_train, y_train, model_type):
     elif model_type == "lr":
         model = SGDRegressor(random_state=RANDOM_STATE)
     elif model_type == "knn":
-        model = KNeighborsRegressor(random_state=RANDOM_STATE)
+        model = KNeighborsRegressor()
     elif model_type == "svr":
-        model = SVR(random_state=RANDOM_STATE)
+        model = SVR()
     else:
         raise ValueError(
             "Unsupported model type. Choose from 'rf', 'xgb', 'lgb', 'lr', 'knn', 'svr'."
@@ -537,14 +552,14 @@ def train_model_hyper_opt(x_train, y_train, model_type):
             "max_iter": [100, 500, 1000, 2000],
         }
     elif model_type == "knn":
-        model = KNeighborsRegressor(random_state=RANDOM_STATE)
+        model = KNeighborsRegressor()
         param_grid = {
             "n_neighbors": [3, 5, 10, 20],
             "weights": ["uniform", "distance"],
             "metric": ["euclidean", "manhattan"],
         }
     elif model_type == "svr":
-        model = SVR(random_state=RANDOM_STATE)
+        model = SVR()
         param_grid = {
             "C": [0.01, 0.1, 0.2, 0.4, 0.8, 1],
             "kernel": ["linear", "poly", "rbf", "sigmoid"],
@@ -618,12 +633,15 @@ def recursive_forecasting(initial_input, model, n_steps, gaps_df):
     return predictions
 
 
+import scipy.stats
+
+
 def process_file(
     input_file_path: str,
     results_folder: str,
     model_type: str = "rf",
     hyper_opt: bool = False,
-):
+) -> tuple[pd.DataFrame, pd.DataFrame, dict, pd.Series]:
     # Initialize/reset variables specific to each file
 
     filename = os.path.basename(input_file_path)
