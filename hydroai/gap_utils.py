@@ -292,6 +292,9 @@ def introduce_synthetic_gaps(
         # else:
         #    random_state = np.random.RandomState(RANDOM_STATE)  # Fixed seed for reproducibility
 
+        #_ = np.random.RandomState(RANDOM_STATE)
+        np.random.RandomState().seed(RANDOM_STATE)
+
         # Ensure the 'time' index is in datetime format
         df.index = pd.to_datetime(df.index)
 
