@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="hydrogap-ai",
-    version="0.3.3",
+    version="0.3.4",
     author="Konstantinos Perifanos",
     author_email="kostas.perifanos@gmail.com",
     description="HydroGAP-AI: Hydro-Gap Artificial Intelligence",

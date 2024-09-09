@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 
 import random
 import numpy as np
+RANDOM_STATE = 42 
 
 def predict_station_gaps(input_file_path: str, model_type="rf"):
     """
@@ -20,19 +21,8 @@ def predict_station_gaps(input_file_path: str, model_type="rf"):
     """
 
 
-    RANDOM_STATE = 42 
     np.random.RandomState().seed(RANDOM_STATE)
     random.seed(RANDOM_STATE)
-
-
-station_file = "./data/lib/station_11.0_cleaned.csv"
-model_type = "xgb"
-
-all_combined_dfs, val_full, metrics_gaps, real_predictions = predict_station_gaps(
-    station_file, model_type=model_type
-)
-
-metrics_gaps['R2_score'], metrics_gaps['RMSE'], metrics_gaps['Mean Bias Error'], metrics_gaps['MAE']
 
     current_datetime = datetime.now().strftime("%Y%m%d_%H%M")
 
