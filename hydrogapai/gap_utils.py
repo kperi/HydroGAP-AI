@@ -869,9 +869,9 @@ def process_file(
     # Now build the metrics dictionary
     ml_metrics_gaps = {
         "Q_lags": Q_lags,  # Add Q_lags array to metrics
-        "Q_lags_Coefficients": [
+        "Q_lags_Coefficients": list([
             round(pacf_vals[lag], 3) for lag in Q_lags
-        ],  # Add Q_lags correlation coefficients rounded to 3 decimals
+        ]),  # Add Q_lags correlation coefficients rounded to 3 decimals
         "P_lags": P_lags,  # Add P_lags array to metrics
         "P_lags_Coefficients": [
             round(ccf_vals[lag], 3) for lag in P_lags

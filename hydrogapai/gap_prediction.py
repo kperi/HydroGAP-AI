@@ -8,9 +8,13 @@ import matplotlib.dates as mdates
 
 import random
 import numpy as np
-RANDOM_STATE = 42 
 
-def predict_station_gaps(input_file_path: str, model_type="rf", hyper_opt=False):
+RANDOM_STATE = 42
+
+
+def predict_station_gaps(
+    input_file_path: str, results_folder: str, model_type="rf", hyper_opt=False
+):
     """
     Predicts station gaps based on the input file path and model type.
     Parameters:
@@ -20,15 +24,14 @@ def predict_station_gaps(input_file_path: str, model_type="rf", hyper_opt=False)
         The result of the process_file function.
     """
 
-
     np.random.RandomState().seed(RANDOM_STATE)
     random.seed(RANDOM_STATE)
 
-    current_datetime = datetime.now().strftime("%Y%m%d_%H%M")
+    # current_datetime = datetime.now().strftime("%Y%m%d_%H%M")
 
-    results_folder = os.path.join(
-        os.path.dirname(input_file_path), f"results_{current_datetime}"
-    )
+    # results_folder = os.path.join(
+    #    os.path.dirname(input_file_path), f"results_{current_datetime}"
+    # )
     os.makedirs(results_folder, exist_ok=True)
 
     # Create a results directory with the current date and time
