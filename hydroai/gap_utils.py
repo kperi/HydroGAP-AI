@@ -567,8 +567,7 @@ def train_model_hyper_opt(x_train, y_train, model_type):
         model = SVR()
         param_grid = {
             "C": [0.01, 0.1, 0.2, 0.4, 0.8, 1],
-            "kernel": ["linear", "poly", "rbf", "sigmoid"],
-            "degree": [1, 2, 3, 4],
+            "kernel": [ "rbf", "sigmoid"],
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1, 1],
             "epsilon": [0.01, 0.1, 0.2, 0.5, 1],
         }
