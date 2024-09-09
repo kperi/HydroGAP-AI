@@ -10,7 +10,7 @@ import random
 import numpy as np
 RANDOM_STATE = 42 
 
-def predict_station_gaps(input_file_path: str, model_type="rf"):
+def predict_station_gaps(input_file_path: str, model_type="rf", hyper_opt=False):
     """
     Predicts station gaps based on the input file path and model type.
     Parameters:
@@ -37,6 +37,7 @@ def predict_station_gaps(input_file_path: str, model_type="rf"):
         input_file_path=input_file_path,
         results_folder=results_folder,
         model_type=model_type,
+        hyper_opt=hyper_opt,
     )
 
 
