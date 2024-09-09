@@ -53,7 +53,7 @@ from sklearn.model_selection import GridSearchCV
 import xgboost as xgb
 import lightgbm as lgb
 import copy
-
+import random
 RANDOM_STATE = 42
 
 num_pacf_lags = 3  # Number of PACF lags to use
@@ -61,6 +61,8 @@ plag_start = 1  # how many days before should the lag period start from
 num_ccf_lags = 30  # Number of CCF lags to use
 
 
+np.random.RandomState().seed(RANDOM_STATE)
+random.seed(RANDOM_STATE)
 
 # Calculate initial gap and streamflow metrics on the real dataset
 # Extract the base file name without extension for naming outputs
