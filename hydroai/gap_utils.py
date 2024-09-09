@@ -54,7 +54,7 @@ import xgboost as xgb
 import lightgbm as lgb
 import copy
 
-RANDOM_STATE = 0
+RANDOM_STATE = 42
 
 num_pacf_lags = 3  # Number of PACF lags to use
 plag_start = 1  # how many days before should the lag period start from
