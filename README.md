@@ -22,11 +22,22 @@ pip install git+https://github.com/kperi/HydroGAP-AI.git
 
 ```python
 
-from hydroai.gap_prediction import predict_station_gaps
+
+from hydrogapai.gap_prediction import (
+    predict_station_gaps,
+)
 station_file = "./data/lib/station_11.0_cleaned.csv"
+results_folder = './output/test_run'
+
+ 
+                
+
 
 reall_combined_dfs, val_full, metrics_gaps, real_predictionst = predict_station_gaps(
-    station_file, model_type="rf"
+    station_file,
+    results_folder=results_folder,
+    model_type=model_type,
+    hyper_opt=False,
 )
 ```
 
