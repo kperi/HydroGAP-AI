@@ -7,7 +7,7 @@ TODO: Write a high level overview of the library
 You can install the library using the following command:
 
 ```bash
-pip install hydrogap-ai
+pip install hydrogapai
 ```
 
 or directly from this repo using: 
