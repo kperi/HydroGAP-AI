@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="hydrogap-ai",
-    version="0.4.2",
+    name="hydrogapai",
+    version="0.5.0",
     author="Konstantinos Perifanos, Yiannis Kontons, Konstantinos Plataridis",
     author_email="kostas.perifanos@gmail.com, ykontos81@gmail.com, platarid@gmail.com",
     description="HydroGAP-AI: Hydro-Gap Artificial Intelligence",
