@@ -13,7 +13,13 @@ RANDOM_STATE = 42
 
 
 def predict_station_gaps(
-    input_file_path: str, results_folder: str, model_type="rf", hyper_opt=False
+    input_file_path: str,
+    results_folder: str,
+    model_type="rf",
+    hyper_opt=False,
+    num_pacf_lags=3,  # Number of PACF lags to use
+    plag_start=1,  # how many days before should the lag period start from
+    num_ccf_lags=30,  # Number of CCF lags to use
 ):
     """
     Predicts station gaps based on the input file path and model type.
@@ -41,6 +47,9 @@ def predict_station_gaps(
         results_folder=results_folder,
         model_type=model_type,
         hyper_opt=hyper_opt,
+        num_pacf_lags=num_pacf_lags,  # Number of PACF lags to use
+        plag_start=plag_start,  # how many days before should the lag period start from
+        num_ccf_lags=num_ccf_lags,  # Number of
     )
 
 
@@ -112,6 +121,7 @@ def plot_fully(
     )
     plt.savefig(plot_file_name, dpi=300)
     plt.close()
+    # plt.clf()
 
 
 def plot_yearly(
@@ -201,3 +211,4 @@ def plot_yearly(
         )
         plt.savefig(plot_file_name, dpi=300)
         plt.close()
+        # plt.clf()

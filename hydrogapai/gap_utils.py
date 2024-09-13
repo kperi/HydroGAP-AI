@@ -54,15 +54,12 @@ import xgboost as xgb
 import lightgbm as lgb
 import copy
 import random
+
 RANDOM_STATE = 42
-
-num_pacf_lags = 3  # Number of PACF lags to use
-plag_start = 1  # how many days before should the lag period start from
-num_ccf_lags = 30  # Number of CCF lags to use
-
 
 np.random.RandomState().seed(RANDOM_STATE)
 random.seed(RANDOM_STATE)
+
 
 # Calculate initial gap and streamflow metrics on the real dataset
 # Extract the base file name without extension for naming outputs
@@ -294,7 +291,7 @@ def introduce_synthetic_gaps(
         # else:
         #    random_state = np.random.RandomState(RANDOM_STATE)  # Fixed seed for reproducibility
 
-        #_ = np.random.RandomState(RANDOM_STATE)
+        # _ = np.random.RandomState(RANDOM_STATE)
         np.random.RandomState().seed(RANDOM_STATE)
 
         # Ensure the 'time' index is in datetime format
@@ -567,7 +564,7 @@ def train_model_hyper_opt(x_train, y_train, model_type):
         model = SVR()
         param_grid = {
             "C": [0.01, 0.1, 0.2, 0.4, 0.8, 1],
-            "kernel": [ "rbf", "sigmoid"],
+            "kernel": ["rbf", "sigmoid"],
             "gamma": ["scale", "auto", 0.001, 0.01, 0.1, 1],
             "epsilon": [0.01, 0.1, 0.2, 0.5, 1],
         }
@@ -606,7 +603,15 @@ def index_of_agreement(obs, cal):
     return ioa
 
 
-def recursive_forecasting(initial_input, model, n_steps, gaps_df):
+def recursive_forecasting(
+    initial_input,
+    model,
+    n_steps,
+    gaps_df,
+    num_pacf_lags,  # Number of PACF lags to use
+    plag_start,  # how many days before should the lag period start from
+    num_ccf_lags,  # Number of CCF lags to use
+):
     predictions = []
     current_input = copy.deepcopy(initial_input.flatten())
 
@@ -645,6 +650,9 @@ def process_file(
     results_folder: str,
     model_type: str = "rf",
     hyper_opt: bool = False,
+    num_pacf_lags=3,  # Number of PACF lags to use
+    plag_start=1,  # how many days before should the lag period start from
+    num_ccf_lags=30,  # Number of CCF lags to use
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict, pd.Series]:
     # Initialize/reset variables specific to each file
 
@@ -694,7 +702,6 @@ def process_file(
             data_real_gap_indices[: interpolation_range - days_to_gaps[0] + 1]
         )
 
- 
     gap_info, days_to_gaps = detect_gaps(data)
 
     # Convert gap_info to DataFrame for easy manipulation
@@ -751,7 +758,13 @@ def process_file(
         n_steps_ahead = len(gap_features)
         # Perform recursive forecasting for the current gap
         multi_step_predictions = recursive_forecasting(
-            initial_test_input, model, n_steps_ahead, gap_features
+            initial_test_input,
+            model,
+            n_steps_ahead,
+            gap_features,
+            num_pacf_lags,  # Number of PACF lags to use
+            plag_start,  # how many days before should the lag period start from
+            num_ccf_lags,  # Number of CCF lags to use
         )
 
         # Assign the predictions back to the original data
@@ -869,9 +882,9 @@ def process_file(
     # Now build the metrics dictionary
     ml_metrics_gaps = {
         "Q_lags": Q_lags,  # Add Q_lags array to metrics
-        "Q_lags_Coefficients": list([
-            round(pacf_vals[lag], 3) for lag in Q_lags
-        ]),  # Add Q_lags correlation coefficients rounded to 3 decimals
+        "Q_lags_Coefficients": list(
+            [round(pacf_vals[lag], 3) for lag in Q_lags]
+        ),  # Add Q_lags correlation coefficients rounded to 3 decimals
         "P_lags": P_lags,  # Add P_lags array to metrics
         "P_lags_Coefficients": [
             round(ccf_vals[lag], 3) for lag in P_lags
