@@ -41,4 +41,4 @@ reall_combined_dfs, val_full, metrics_gaps, real_predictionst = predict_station_
 )
 ```
 
-For a more detailed example of the library including outputs see this [notebook](./lib_demo.ipynb)
+For a more detailed example of the library including outputs see this [notebook](./HydroGap-AI_library_demo_v5.ipynb)
