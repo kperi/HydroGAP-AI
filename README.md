@@ -33,7 +33,7 @@ results_folder = './output/test_run'
                 
 
 
-reall_combined_dfs, val_full, metrics_gaps, real_predictionst = predict_station_gaps(
+all_combined_dfs, val_full, metrics_gaps, real_predictionst = predict_station_gaps(
     station_file,
     results_folder=results_folder,
     model_type=model_type,
